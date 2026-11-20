@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>guitartech67</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0f1013;--panel:#1a1c21;--panel2:#23262d;--line:#2f333c;--ink:#f1efe9;--ink2:#9a9ea8;--aqua:#ffb23e;--ok:#43e0b4;--tile:#14151a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Sora","Segoe UI",system-ui,sans-serif;color:var(--ink);background:radial-gradient(ellipse 80% 40% at 50% -5%,rgba(255,178,62,.16),transparent 70%),var(--bg) fixed;overflow-x:hidden}
+.app{max-width:460px;margin:0 auto;padding:22px 16px 40px}
+h1{margin:6px 0 4px;font-size:34px;font-weight:700;letter-spacing:-1px}
+.sub{margin:0 0 22px;color:var(--ink2);font-size:14px}
+.glass{background:var(--panel);border:1px solid var(--line);border-radius:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{padding:18px 14px 16px;text-align:left;cursor:pointer;font:inherit;color:inherit;display:block;width:100%;transition:border-color .15s,transform .15s}
+.tile:hover{border-color:var(--aqua)}
+.tile:focus-visible,.btn:focus-visible,.chip:focus-visible{outline:2px solid var(--aqua);outline-offset:2px}
+.orb{width:48px;height:48px;margin:0 0 14px;border-radius:14px;display:grid;place-items:center;font-size:24px;background:var(--panel2);border:1px solid var(--line)}
+.live .orb{box-shadow:0 0 18px rgba(255,178,62,.35);border-color:rgba(255,178,62,.6)}
+.tile b{display:block;font-size:16px;font-weight:600}
+.tile small{display:block;color:var(--ink2);margin-top:3px;font-size:12.5px;line-height:1.35}
+.badge{display:inline-block;margin-top:12px;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;background:var(--panel2);color:var(--ink2)}
+.live .badge{background:rgba(67,224,180,.14);color:var(--ok)}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.top h2{margin:0;font-size:22px;font-weight:700}
+.btn{font:inherit;font-weight:600;cursor:pointer;border:0;border-radius:12px;padding:12px 22px;color:#1a1100;background:var(--aqua);box-shadow:0 4px 18px rgba(255,178,62,.3)}
+.btn.green{background:var(--ok);box-shadow:0 4px 18px rgba(67,224,180,.25);color:#04241a}
+.btn.back{padding:8px 14px;background:var(--panel2);color:var(--ink);box-shadow:none;border:1px solid var(--line)}
+.panel{padding:20px}
+.big{font-size:88px;font-weight:700;line-height:1;text-align:center;margin:6px 0;letter-spacing:-3px}
+.hz{text-align:center;color:var(--ink2);min-height:22px;font-size:14px}
+.meter{position:relative;height:120px;margin:12px auto 0;width:240px;overflow:hidden}
+.arc{position:absolute;left:0;top:0;width:240px;height:240px;border-radius:50%;border:10px solid var(--line);border-bottom-color:transparent;border-left-color:rgba(255,178,62,.7);border-right-color:rgba(255,178,62,.7);border-top-color:var(--ok)}
+.needle{position:absolute;left:118px;bottom:0;width:4px;height:104px;background:var(--ink);border-radius:4px;transform-origin:50% 100%;transform:rotate(0);transition:transform .12s}
+.state{text-align:center;font-weight:600;margin:10px 0 16px;min-height:24px}
+.strings{display:flex;justify-content:center;gap:8px;margin:0 0 16px;flex-wrap:wrap}
+.chip{font:inherit;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink);padding:7px 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.chip[aria-pressed="true"],.chip.on{background:var(--aqua);color:#1a1100;border-color:var(--aqua)}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.center{text-align:center}
+svg text{font-family:inherit;font-weight:700}
+.note{color:var(--ink2);font-size:13px;margin-top:12px}
+textarea{width:100%;font:inherit;color:var(--ink);background:var(--tile);border:1px solid var(--line);border-radius:12px;padding:12px;resize:vertical}.out{white-space:pre-wrap;line-height:1.55;font-size:14px;margin-top:6px}.out.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;overflow-x:auto}
+@media (prefers-reduced-motion:reduce){.needle,.tile{transition:none}}
+</style>
+</head>
+<body>
+<main class="app" id="app"></main>
+<script>
+/* Versão Android: sem o runtime do claude.ai, a IA usa a sua chave da API da Anthropic (fica só neste aparelho). */
+window.claude=window.claude||{use:async function(n){
+ if(n!=="sample")return null;
+ var k=localStorage.getItem("gai_key");
+ if(!k){k=prompt("Cole sua chave da API da Anthropic (fica salva só neste aparelho):");if(!k)return null;localStorage.setItem("gai_key",k.trim())}
+ return async function(msgs,o){
+  var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":localStorage.getItem("gai_key"),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:1500,messages:msgs})});
+  if(!r.ok){if(r.status===401)localStorage.removeItem("gai_key");throw{code:r.status===401?"not_granted":"error"}}
+  var j=await r.json(),t=(j.content||[]).map(function(c){return c.text||""}).join("");
+  if(o&&o.onText)o.onText({text:t});return{text:t}}}};
+</script>
+<script>
+var NOTES=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+var MODS=[
+{id:"learn",n:"Learn AI",d:"Professor de guitarra com IA",i:"🎓"},
+{id:"tone",n:"Tone Lab",d:"Timbres e amplificadores",i:"🎛️"},
+{id:"sound",n:"Sound Analyzer",d:"Afinador e análise de áudio",i:"🎧"},
+{id:"creative",n:"Creative Lab",d:"Riffs, solos e exercícios",i:"⚡"},
+{id:"tab",n:"Tab Assistant",d:"Entenda tablaturas",i:"📜"},
+{id:"chords",n:"Chord Explorer",d:"Acordes e escalas",i:"🎸"}
+];
+var app=document.getElementById("app"),cleanup=null;
+function go(id){if(cleanup){cleanup();cleanup=null}
+ if(!id)return home();
+ var m=MODS.filter(function(x){return x.id===id})[0];
+ if(id==="sound")return tuner(m);
+ if(id==="chords")return chords(m);
+ if(id==="creative")return creative(m);
+ ai(m)}
+function head(m){return '<div class="top"><button class="btn back" id="bk">‹ Início</button><h2>'+m.n+'</h2></div>'}
+function bind(){document.getElementById("bk").onclick=function(){go()}}
+function home(){
+ app.innerHTML='<h1>guitartech67</h1><p class="sub">Sua central de ferramentas para guitarra</p><div class="grid">'+
+ MODS.map(function(m){return '<button class="tile glass '+(m.soon?'soon':'live')+'" data-id="'+m.id+'"><div class="orb">'+m.i+'</div><b>'+m.n+'</b><small>'+m.d+'</small><span class="badge">'+(m.soon?'Em breve':'Pronto')+'</span></button>'}).join("")+'</div>';
+ [].forEach.call(app.querySelectorAll(".tile"),function(b){b.onclick=function(){go(b.dataset.id)}});homeSnd()}
+function soon(m){
+ app.innerHTML=head(m)+'<div class="glass panel center"><div class="orb">'+m.i+'</div><h3>'+m.n+' chega na próxima versão</h3><p>'+m.t+'</p></div>';bind()}
+
+/* ---------- Afinador ---------- */
+function tuner(m){
+ app.innerHTML=head(m)+'<div class="glass panel"><div class="strings" id="st"></div><div class="big" id="nt">–</div><div class="hz" id="hz">Toque uma corda</div><div class="meter"><div class="arc"></div><div class="needle" id="nd"></div></div><div class="state" id="ss">Toque em Ligar afinador</div><div class="center"><button class="btn green" id="go">Ligar afinador</button></div><p class="note center" id="er"></p></div>';bind();
+ var S=[["E2",82.41],["A2",110],["D3",146.83],["G3",196],["B3",246.94],["E4",329.63]];
+ document.getElementById("st").innerHTML=S.map(function(s,i){return '<span class="chip" id="s'+i+'">'+s[0]+'</span>'}).join("");
+ var ctx,stream,an,raf,buf,on=false;
+ function stop(){on=false;cancelAnimationFrame(raf);if(stream)stream.getTracks().forEach(function(t){t.stop()});if(ctx)ctx.close();ctx=stream=null;var g=document.getElementById("go");if(g)g.textContent="Ligar afinador"}
+ cleanup=stop;
+ function pitch(b,sr){var n=b.length,r=0,i;for(i=0;i<n;i++)r+=b[i]*b[i];if(Math.sqrt(r/n)<0.01)return -1;
+  var lo=Math.floor(sr/450),hi=Math.floor(sr/70),N=2048,c=[],mx=0,l;
+  for(l=lo;l<=hi;l++){var s=0;for(i=0;i<N;i++)s+=b[i]*b[i+l];c[l]=s;if(s>mx)mx=s}
+  for(l=lo+1;l<hi;l++){if(c[l]>c[l-1]&&c[l]>=c[l+1]&&c[l]>=0.9*mx){var a=c[l-1],bb=c[l],d=c[l+1],sh=(a-d)/(2*(a-2*bb+d))||0;return sr/(l+sh)}}
+  return -1}
+ function tick(){if(!on)return;an.getFloatTimeDomainData(buf);var f=pitch(buf,ctx.sampleRate);
+  if(f>0){var mn=69+12*Math.log2(f/440),n=Math.round(mn),ct=(mn-n)*100;
+   document.getElementById("nt").textContent=NOTES[((n%12)+12)%12];
+   document.getElementById("hz").textContent=f.toFixed(1)+" Hz";
+   document.getElementById("nd").style.transform="rotate("+Math.max(-60,Math.min(60,ct*1.2))+"deg)";
+   var ok=Math.abs(ct)<5,ss=document.getElementById("ss");ss.textContent=ok?"Afinada ✔":(ct<0?"Muito grave: aperte a corda":"Muito aguda: afrouxe a corda");ss.style.color=ok?"#43e0b4":"";
+   var best=0,bd=1e9;S.forEach(function(s,i){var d=Math.abs(Math.log2(f/s[1]));if(d<bd){bd=d;best=i}});
+   S.forEach(function(s,i){document.getElementById("s"+i).classList.toggle("on",i===best&&bd<0.1)})}
+  raf=requestAnimationFrame(tick)}
+ document.getElementById("go").onclick=async function(){
+  if(on){stop();return}
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+   ctx=new (window.AudioContext||window.webkitAudioContext)();var src=ctx.createMediaStreamSource(stream);an=ctx.createAnalyser();an.fftSize=8192;buf=new Float32Array(an.fftSize);src.connect(an);
+   on=true;this.textContent="Parar";document.getElementById("er").textContent="";document.getElementById("ss").textContent="Ouvindo…";tick()}
+  catch(e){document.getElementById("er").textContent="Não consegui acessar o microfone. Permita o acesso ou abra este app direto no navegador do celular."}}}
+
+/* ---------- Banco de sons do usuário ---------- */
+window.SMP=window.SMP||[];
+function gPitch(b,sr){var d=b.getChannelData(0),st=0,mx=0,i;for(i=0;i<Math.min(d.length,sr);i++)mx=Math.max(mx,Math.abs(d[i]));
+ for(i=0;i<d.length;i++)if(Math.abs(d[i])>mx*.3){st=i;break}
+ var N=2048,lo=Math.floor(sr/1200),hi=Math.floor(sr/70),c=[],m=0,l;st+=Math.floor(sr*.05);if(st+N+hi>=d.length)st=Math.max(0,d.length-N-hi-1);
+ for(l=lo;l<=hi;l++){var s=0;for(i=0;i<N;i++)s+=d[st+i]*d[st+i+l];c[l]=s;if(s>m)m=s}
+ for(l=lo+1;l<hi;l++)if(c[l]>c[l-1]&&c[l]>=c[l+1]&&c[l]>=.9*m)return sr/l;return 0}
+function smPick(f){var b=SMP[0],i;for(i=1;i<SMP.length;i++)if(Math.abs(Math.log(f/SMP[i].f))<Math.abs(Math.log(f/b.f)))b=SMP[i];return b}
+function smTxt(){return SMP.length?SMP.length+" som(ns) carregado(s): "+SMP.map(function(x){var n=Math.round(12*Math.log2(x.f/440)+69);return NOTES[n%12]+(Math.floor(n/12)-1)}).join(", "):"Usando o som de corda do app. Carregue gravações de guitarra, com uma nota por arquivo, para usar o seu som nos acordes e nas tablaturas."}
+function homeSnd(){app.insertAdjacentHTML("beforeend",'<div class="glass panel" style="margin-top:14px"><b>Meus sons de guitarra</b><p class="note" id="sm">'+smTxt()+'</p><input type="file" id="sf" accept="audio/*" multiple hidden><button class="btn" id="sb">Carregar sons</button> <button class="btn back" id="sx">Limpar</button></div>');
+ var fi=document.getElementById("sf"),tx=document.getElementById("sm");
+ document.getElementById("sb").onclick=function(){fi.click()};
+ document.getElementById("sx").onclick=function(){SMP.length=0;tx.textContent=smTxt()};
+ fi.onchange=async function(){var C=window.GC=window.GC||new (window.AudioContext||window.webkitAudioContext)(),ok=0,fl=[].slice.call(fi.files),j;tx.textContent="Lendo os arquivos…";
+  for(j=0;j<fl.length;j++){try{var b=await C.decodeAudioData(await fl[j].arrayBuffer()),m=/^([A-Ga-g])([#b]?)(\d)/.exec(fl[j].name),fq=0;
+   if(m)fq=440*Math.pow(2,((+m[3]+1)*12+{C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1].toUpperCase()]+(m[2]==="#"?1:m[2]==="b"?-1:0)-69)/12);else fq=gPitch(b,b.sampleRate);
+   if(!fq)continue;var pk=0,ch,i;for(ch=0;ch<b.numberOfChannels;ch++){var dd=b.getChannelData(ch);for(i=0;i<dd.length;i++)pk=Math.max(pk,Math.abs(dd[i]))}
+   if(pk>0)for(ch=0;ch<b.numberOfChannels;ch++){var d2=b.getChannelData(ch);for(i=0;i<d2.length;i++)d2[i]*=.9/pk}
+   SMP.push({f:fq,b:b});ok++}catch(e){}}
+  tx.textContent=(ok<fl.length?(fl.length-ok)+" arquivo(s) não deu(ram) para ler. ":"")+smTxt();fi.value=""}}
+/* ---------- Som de corda (Karplus-Strong) ---------- */
+function ksBuf(c,f,d){var sr=c.sampleRate,len=Math.ceil(sr*(d+.3)),b=c.createBuffer(1,len,sr),y=b.getChannelData(0),D=sr/f-.5,n0=Math.ceil(D)+2,i,r=new Float32Array(n0),pk=Math.max(1,Math.round(D*.18)),g=Math.pow(.0005,1/(f*4)),pv=0;
+ for(i=0;i<n0;i++){pv=pv*.3+(Math.random()*2-1)*.7;r[i]=pv}
+ for(i=0;i<n0;i++)y[i]=r[i]-(i>=pk?r[i-pk]:0)*.8;
+ for(i=n0;i<len;i++){var p=i-D,k=Math.floor(p),fr=p-k;y[i]=g*.5*((y[k]*(1-fr)+y[k+1]*fr)+(y[k-1]*(1-fr)+y[k]*fr))}
+ var m=0;for(i=0;i<3000&&i<len;i++)m=Math.max(m,Math.abs(y[i]));if(m>0)for(i=0;i<len;i++)y[i]*=.9/m;return b}
+function ksNote(c,dest,f,t,d,o){var key=Math.round(f*10)+"_"+Math.round(d*10),ca=c.__k=c.__k||{},s=c.createBufferSource(),g=c.createGain(),leg=o.tech==="h"||o.tech==="p";
+ if(SMP.length){var sm=smPick(f);s.buffer=sm.b;s.playbackRate.value=f/sm.f}else s.buffer=ca[key]||(ca[key]=ksBuf(c,f,d));
+ if(o.tech==="b"){s.detune.setValueAtTime(0,t+.03);s.detune.linearRampToValueAtTime(200,t+.2)}
+ if(o.tech==="/"){s.detune.setValueAtTime(-500,t);s.detune.linearRampToValueAtTime(0,t+.09)}
+ if(o.tech==="~"){var l=c.createOscillator(),lg=c.createGain();l.frequency.value=5.5;lg.gain.value=25;l.connect(lg);lg.connect(s.detune);l.start(t+.25);l.stop(t+d+.3)}
+ g.gain.setValueAtTime(o.a*(leg?.6:1),t);g.gain.setTargetAtTime(.0001,t+d,.05);
+ s.connect(g);g.connect(dest);s.start(t);s.stop(t+d+.3)}
+var AI={
+learn:{chat:1,sys:"Você é um professor de guitarra paciente e motivador. Responda em português do Brasil, em texto simples (sem markdown e sem asteriscos), curto e em passos.",ph:"Pergunte qualquer coisa sobre guitarra…",q:["Como faço pestana sem doer a mão?","Monte um plano de estudo de 4 semanas","O que é a escala pentatônica?"]},
+tone:{sys:"Você é especialista em timbres de guitarra. Dado o som que a pessoa quer, responda em português do Brasil, em texto simples sem markdown, com: guitarra e captador sugeridos, amplificador (Gain, Graves, Médios, Agudos, Presence e Volume de 0 a 10), pedais na ordem do sinal com ajustes e uma dica final. Seja objetivo.",ph:"Ex.: timbre do solo de Comfortably Numb",q:["Timbre limpo estilo Fender anos 60","Rock pesado com bastante graves","Blues quente com leve overdrive"]},
+creative:{sys:"Você é um compositor de guitarra. Crie o riff, solo ou exercício pedido, em português do Brasil, em texto simples sem markdown. Escreva sempre em tablatura ASCII de 6 linhas (e B G D A E) alinhada e informe tom ou escala, andamento sugerido e uma dica de execução.",ph:"Ex.: riff de rock em Mi menor, 120 bpm",q:["Riff de rock em Mi menor, 120 bpm","Exercício de velocidade com pentatônica","Solo lento e emotivo em Lá menor"]},
+tab:{sys:"Você explica tablaturas de guitarra para iniciantes, em português do Brasil, em texto simples sem markdown. Para a tablatura recebida, diga o tom ou os acordes prováveis, explique cada técnica que aparecer (h, p, b, /, \\, ~, x, PM), sugira o dedilhado e como estudar em partes.",ph:"Cole a tablatura aqui…",q:["e|---------0-------|\nB|-------1-----1---|\nG|-----0-----------|\nD|---2-------------|\nA|-3---------------|\nE|-----------------|"],ql:["Colar exemplo (C arpejado)"]}};
+function ai(m){var C=AI[m.id],hist=[],busy=false;
+ app.innerHTML=head(m)+'<div class="glass panel"><div class="row" id="qk"></div><textarea id="tx" rows="'+(m.id==="tab"?7:3)+'" placeholder="'+C.ph+'"></textarea><div style="margin:10px 0"><button class="btn" id="sn">'+(C.chat?"Enviar":"Gerar")+'</button></div><div id="out" class="out'+(m.id==="creative"||m.id==="tab"?" mono":"")+'"></div></div>';bind();
+ var tx=document.getElementById("tx"),out=document.getElementById("out"),sn=document.getElementById("sn");
+ document.getElementById("qk").innerHTML=C.q.map(function(q,i){return '<button class="chip" data-i="'+i+'">'+(C.ql?C.ql[i]:q)+'</button>'}).join("");
+ [].forEach.call(document.querySelectorAll("[data-i]"),function(b){b.onclick=function(){tx.value=C.q[+b.dataset.i];tx.focus()}});
+ function show(p){out.textContent=C.chat?hist.map(function(h){return(h.role==="user"?"Você: ":"Professor: ")+h.content}).join("\n\n")+(p?"\n\nProfessor: "+p:""):(p||(hist.length?hist[hist.length-1].content:""))}
+ sn.onclick=async function(){var q=tx.value.trim();if(!q||busy)return;
+  var sm=await claude.use("sample");if(!sm){out.textContent="A IA não está disponível aqui. Abra este app pelo link do claude.ai.";return}
+  if(!C.chat)hist=[];hist.push({role:"user",content:q});
+  var msgs=hist.map(function(h,i){return i===0?{role:"user",content:C.sys+"\n\nPedido do usuário:\n"+h.content}:h});
+  busy=true;sn.disabled=true;tx.value="";show("…");
+  try{var r=await sm(msgs,{cache:false,onText:function(t){show(t.text)}});hist.push({role:"assistant",content:r.text});show("")}
+  catch(e){hist.pop();out.textContent=e&&e.code==="not_granted"?"Permita o acesso à IA para usar este módulo.":"Não consegui gerar agora. Tente de novo em instantes."}
+  busy=false;sn.disabled=false}}
+function creative(m){var C=AI.creative,tab=null,actx,timer,tmo,playing=false;
+ var SYS='Você é compositor de guitarra. Responda SOMENTE com JSON válido, sem markdown e sem texto extra, neste formato: {"titulo":"","tom":"","bpm":100,"dica":"","notas":[{"p":0,"n":[[6,0]],"d":2}]}. Regras: compasso 4/4 dividido em 16 passos (semicolcheias); p é o passo inicial (0 a 63, no máximo 4 compassos); d é a duração em passos (opcional); n é a lista de notas [corda, casa], com corda de 1 (mi agudo) a 6 (mi grave) e casa de 0 a 17; um terceiro item opcional da nota indica a técnica: "h" (hammer-on), "p" (pull-off), "b" (bend), "/" (slide) ou "~" (vibrato). As notas devem pertencer à escala pedida e ser tocáveis. dica: uma frase curta em português do Brasil.';
+ app.innerHTML=head(m)+'<div class="glass panel"><div class="row" id="qk"></div><textarea id="tx" rows="3" placeholder="'+C.ph+'"></textarea><div style="margin:10px 0"><button class="btn" id="sn">Gerar tablatura</button></div><div id="msg" class="note"></div><div id="res" hidden><h3 id="tt" style="margin:8px 0 2px"></h3><div class="note" id="mt" style="margin:0 0 10px"></div><div id="tb"></div><div class="row" id="gn" style="margin-top:12px"></div><div class="row" style="align-items:center;margin-top:12px"><button class="btn green" id="pl">▶ Tocar</button><label class="note" style="margin:0">BPM <input type="range" id="bp" min="50" max="200" value="100" style="accent-color:var(--aqua)"> <span id="bv">100</span></label></div><p class="note" id="dc"></p></div></div>';bind();
+ var $=function(i){return document.getElementById(i)},tx=$("tx"),sn=$("sn"),msg=$("msg"),pl=$("pl"),X=function(p){return 36+(p%16)*20},Y=function(b){return b*118+22};
+ $("qk").innerHTML=C.q.map(function(q,i){return '<button class="chip" data-i="'+i+'">'+q+'</button>'}).join("");
+ [].forEach.call(document.querySelectorAll("[data-i]"),function(b){b.onclick=function(){tx.value=C.q[+b.dataset.i];tx.focus()}});
+ function parse(t){var j=JSON.parse(t.slice(t.indexOf("{"),t.lastIndexOf("}")+1)),ev=(j.notas||[]).map(function(e){return{p:Math.max(0,Math.min(63,e.p|0)),d:Math.max(1,e.d|0),n:(e.n||[]).filter(function(x){return x&&x[0]>=1&&x[0]<=6&&x[1]>=0&&x[1]<=24}).map(function(x){return[x[0]|0,x[1]|0,x[2]||""]})}}).filter(function(e){return e.n.length}).sort(function(a,b){return a.p-b.p});
+  if(!ev.length)throw 0;return{t:j.titulo||"Ideia nova",tom:j.tom||"",bpm:Math.max(50,Math.min(200,j.bpm|0||100)),dica:j.dica||"",ev:ev,bars:Math.ceil((ev[ev.length-1].p+1)/16)}}
+ function render(){var s='<svg viewBox="0 0 380 '+(tab.bars*118)+'" style="width:100%" role="img" aria-label="Tablatura">',b,i,k;
+  for(b=0;b<tab.bars;b++){var y=Y(b);s+='<text x="4" y="'+(y-8)+'" font-size="10" fill="var(--ink2)">compasso '+(b+1)+'</text>';
+   for(i=0;i<6;i++)s+='<line x1="30" x2="362" y1="'+(y+i*16)+'" y2="'+(y+i*16)+'" stroke="var(--ink2)" stroke-width="1"/>';
+   [30,362].forEach(function(x){s+='<line x1="'+x+'" x2="'+x+'" y1="'+y+'" y2="'+(y+80)+'" stroke="var(--ink)" stroke-width="2"/>'});
+   for(k=1;k<4;k++)s+='<line x1="'+(36+k*80-10)+'" x2="'+(36+k*80-10)+'" y1="'+y+'" y2="'+(y+80)+'" stroke="var(--line)" stroke-dasharray="2 3"/>';
+   ["T","A","B"].forEach(function(c,j){s+='<text x="12" y="'+(y+22+j*22)+'" font-size="13" fill="var(--ink2)" text-anchor="middle">'+c+'</text>'})}
+  s+='<rect id="hl" width="20" height="0" rx="4" fill="var(--aqua)" opacity=".25"/>';
+  tab.ev.forEach(function(e){var x=X(e.p),y0=Y(Math.floor(e.p/16));e.n.forEach(function(n){var y=y0+(n[0]-1)*16,w=String(n[1]).length*8+6;
+   s+='<rect x="'+(x-w/2)+'" y="'+(y-7)+'" width="'+w+'" height="14" rx="3" fill="var(--panel)"/><text x="'+x+'" y="'+(y+4.5)+'" font-size="12" font-weight="700" text-anchor="middle" fill="var(--ink)">'+n[1]+'</text>';
+   if(n[2])s+='<text x="'+x+'" y="'+(y-9)+'" font-size="10" text-anchor="middle" fill="var(--aqua)">'+n[2]+'</text>'})});
+  $("tb").innerHTML=s+'</svg>';$("tt").textContent=tab.t;$("mt").textContent=[tab.tom,tab.bars+(tab.bars>1?" compassos":" compasso"),"4/4"].filter(Boolean).join(", ");$("dc").textContent=tab.dica?"Dica: "+tab.dica:"";$("bp").value=tab.bpm;$("bv").textContent=tab.bpm;$("res").hidden=false}
+ function mv(p){var h=$("hl");if(!h)return;h.setAttribute("x",X(p)-10);h.setAttribute("y",Y(Math.floor(p/16))-8);h.setAttribute("height",96)}
+ function stop(){clearInterval(timer);clearTimeout(tmo);playing=false;pl.textContent="▶ Tocar";var h=$("hl");if(h)h.setAttribute("height",0)}
+ var LV=[["Limpo",1.2,2800],["Crunch",7,3600],["Pesado",22,4400]],lv=2;
+ function curve(k){var n=2048,c=new Float32Array(n),i,x;for(i=0;i<n;i++){x=i*2/n-1;c[i]=Math.tanh(k*x+.15)-Math.tanh(.15)}return c}
+ function bus(){if(actx.__b)return actx.__b;var inp=actx.createGain(),hp=actx.createBiquadFilter(),ws=actx.createWaveShaper(),lp=actx.createBiquadFilter(),mid=actx.createBiquadFilter(),out=actx.createGain();
+  hp.type="highpass";hp.frequency.value=110;ws.oversample="4x";lp.type="lowpass";lp.Q.value=.9;mid.type="peaking";mid.frequency.value=1100;mid.gain.value=4;out.gain.value=.5;
+  inp.connect(hp);hp.connect(ws);ws.connect(lp);lp.connect(mid);mid.connect(out);out.connect(actx.destination);return actx.__b={inp:inp,ws:ws,lp:lp}}
+ function setLv(){var b=bus();b.ws.curve=curve(LV[lv][1]);b.lp.frequency.value=LV[lv][2]}
+ function pluck(n,t,d){ksNote(actx,bus().inp,440*Math.pow(2,([64,59,55,50,45,40][n[0]-1]+n[1]-69)/12),t,d,{a:.5,tech:n[2]})}
+ $("gn").innerHTML=LV.map(function(l,i){return '<button class="chip" data-g="'+i+'" aria-pressed="'+(i===lv)+'">'+l[0]+'</button>'}).join("");
+ [].forEach.call(document.querySelectorAll("[data-g]"),function(b){b.onclick=function(){lv=+b.dataset.g;[].forEach.call(document.querySelectorAll("[data-g]"),function(c){c.setAttribute("aria-pressed",String(+c.dataset.g===lv))});if(actx)setLv()}});
+ pl.onclick=function(){if(playing){stop();return}
+  actx=actx||new (window.AudioContext||window.webkitAudioContext)();setLv();var sd=60/+$("bp").value/4,t0=actx.currentTime+.1,tot=tab.bars*16,i=0;
+  tab.ev.forEach(function(e){e.n.forEach(function(n){pluck(n,t0+e.p*sd,Math.max(.5,e.d*sd*1.3+.15))})});
+  playing=true;pl.textContent="■ Parar";
+  tmo=setTimeout(function(){mv(0);i=1;timer=setInterval(function(){if(i>=tot){stop();return}mv(i);i++},sd*1000)},100)};
+ $("bp").oninput=function(){$("bv").textContent=this.value;if(playing)stop()};
+ cleanup=function(){stop();if(actx)actx.close()};
+ sn.onclick=async function(){var q=tx.value.trim();if(!q||sn.disabled)return;
+  var sm=await claude.use("sample");if(!sm){msg.textContent="A IA não está disponível aqui. Abra este app pelo link do claude.ai.";return}
+  stop();sn.disabled=true;msg.textContent="Compondo…";
+  try{var r=await sm([{role:"user",content:SYS+"\n\nPedido: "+q}],{cache:false});tab=parse(r.text);render();msg.textContent=""}
+  catch(e){msg.textContent=e&&e.code==="not_granted"?"Permita o acesso à IA para usar este módulo.":"Não consegui montar a tablatura. Tente de novo ou descreva de outro jeito."}
+  sn.disabled=false}}
+/* ---------- Acordes ---------- */
+function chords(m){
+ var root=0,type="maj",fr=[];
+ var TB={"maj": [[null, 3, 2, 0, 1, 0], [null, 4, 6, 6, 6, 4], [null, null, 0, 2, 3, 2], [null, 6, 8, 8, 8, 6], [0, 2, 2, 1, 0, 0], [1, 3, 3, 2, 1, 1], [2, 4, 4, 3, 2, 2], [3, 2, 0, 0, 0, 3], [4, 6, 6, 5, 4, 4], [null, 0, 2, 2, 2, 0], [null, 1, 3, 3, 3, 1], [null, 2, 4, 4, 4, 2]], "min": [[null, 3, 5, 5, 4, 3], [null, 4, 6, 6, 5, 4], [null, null, 0, 2, 3, 1], [null, 6, 8, 8, 7, 6], [0, 2, 2, 0, 0, 0], [1, 3, 3, 1, 1, 1], [2, 4, 4, 2, 2, 2], [3, 5, 5, 3, 3, 3], [4, 6, 6, 4, 4, 4], [null, 0, 2, 2, 1, 0], [null, 1, 3, 3, 2, 1], [null, 2, 4, 4, 3, 2]], "7": [[null, 3, 2, 3, 1, 0], [null, 4, 6, 4, 6, 4], [null, null, 0, 2, 1, 2], [null, 6, 8, 6, 8, 6], [0, 2, 0, 1, 0, 0], [1, 3, 1, 2, 1, 1], [2, 4, 2, 3, 2, 2], [3, 2, 0, 0, 0, 1], [4, 6, 4, 5, 4, 4], [null, 0, 2, 0, 2, 0], [null, 1, 3, 1, 3, 1], [null, 2, 1, 2, 0, 2]], "maj7": [[null, 3, 2, 0, 0, 0], [null, 4, 6, 5, 6, 4], [null, null, 0, 2, 2, 2], [null, 6, 8, 7, 8, 6], [0, 2, 1, 1, 0, 0], [null, null, 3, 2, 1, 0], [2, 4, 3, 3, 2, 2], [3, 2, 0, 0, 0, 2], [4, 6, 5, 5, 4, 4], [null, 0, 2, 1, 2, 0], [null, 1, 3, 2, 3, 1], [null, 2, 4, 3, 4, 2]], "m7": [[null, 3, 5, 3, 4, 3], [null, 4, 6, 4, 5, 4], [null, null, 0, 2, 1, 1], [null, 6, 8, 6, 7, 6], [0, 2, 0, 0, 0, 0], [1, 3, 1, 1, 1, 1], [2, 4, 2, 2, 2, 2], [3, 5, 3, 3, 3, 3], [4, 6, 4, 4, 4, 4], [null, 0, 2, 0, 1, 0], [null, 1, 3, 1, 2, 1], [null, 2, 0, 2, 0, 2]]},IV={"maj": [0, 4, 7], "min": [0, 3, 7], "7": [0, 4, 7, 10], "maj7": [0, 4, 7, 11], "m7": [0, 3, 7, 10]};
+ var TN={maj:"",min:"m","7":"7",maj7:"maj7",m7:"m7"},TL={maj:"Maior",min:"Menor","7":"Dominante (7)",maj7:"Maior com 7ª",m7:"Menor com 7ª"};
+ app.innerHTML=head(m)+'<div class="glass panel"><div class="row" id="rt"></div><div class="row" id="tp"></div><div class="center" id="dg"></div><div class="center" style="margin-top:8px"><button class="btn green" id="pl">▶ Tocar acorde</button></div><p class="note center" id="nn"></p></div><div class="glass panel" style="margin-top:14px"><h3 style="margin:0 0 10px" id="sh"></h3><div class="row" id="sc"></div><div id="sd"></div></div>';bind();
+ document.getElementById("rt").innerHTML=NOTES.map(function(n,i){return '<button class="chip" data-r="'+i+'" aria-pressed="false">'+n+'</button>'}).join("");
+ document.getElementById("tp").innerHTML=["maj","min","7","maj7","m7"].map(function(t){return '<button class="chip" data-t="'+t+'" aria-pressed="false">'+TL[t]+'</button>'}).join("");
+ function calc(){fr=TB[type][root].slice();var pl=fr.filter(function(v){return v!==null}),p=pl.filter(function(v){return v>0}),mn=p.length?Math.min.apply(null,p):0;return pl.indexOf(0)<0&&mn>0&&p.filter(function(v){return v===mn}).length>1?mn:0}
+ function draw(){var f=calc(),X=function(i){return 34+i*24},p=fr.filter(function(v){return v>0}),mxf=Math.max.apply(null,p.concat([0])),mnf=p.length?Math.min.apply(null,p):1,st=mxf<=5?1:mnf;
+  var s='<svg viewBox="0 0 190 190" width="230" role="img" aria-label="Diagrama do acorde"><rect x="26" y="34" width="132" height="130" rx="8" fill="var(--tile)" opacity=".85"/>';
+  for(var j=0;j<=5;j++)s+='<line x1="34" x2="154" y1="'+(40+j*24)+'" y2="'+(40+j*24)+'" stroke="var(--ink2)" stroke-width="'+(j===0&&st===1?5:1.5)+'"/>';
+  for(var i=0;i<6;i++)s+='<line x1="'+X(i)+'" x2="'+X(i)+'" y1="40" y2="160" stroke="var(--ink2)" stroke-width="'+(1+(5-i)*.25)+'"/>';
+  if(f>0){var fi=fr.indexOf(f),la=fr.lastIndexOf(f),by=40+(f-st+.5)*24;s+='<rect x="'+(X(fi)-10)+'" y="'+(by-10)+'" width="'+(X(la)-X(fi)+20)+'" height="20" rx="10" fill="var(--aqua)" opacity=".9"/>'}
+  fr.forEach(function(v,i){if(v===null)s+='<text x="'+X(i)+'" y="28" text-anchor="middle" fill="var(--ink)" font-size="16">×</text>';
+   else if(v===0)s+='<circle cx="'+X(i)+'" cy="23" r="6" fill="none" stroke="var(--ink)" stroke-width="2"/>';
+   else{var y=40+(v-st+.5)*24;s+='<circle cx="'+X(i)+'" cy="'+y+'" r="10" fill="var(--aqua)" stroke="#fff" stroke-width="2"/><ellipse cx="'+(X(i)-3)+'" cy="'+(y-4)+'" rx="5" ry="3" fill="#fff" opacity=".7"/>'}});
+  if(st>1)s+='<text x="8" y="'+(40+12+4)+'" fill="var(--ink)" font-size="14">'+st+'ª</text>';
+  s+='</svg>';
+  document.getElementById("dg").innerHTML='<h3 style="margin:4px 0">'+NOTES[root]+TN[type]+'</h3>'+s;
+  document.getElementById("nn").textContent="Notas: "+IV[type].map(function(i){return NOTES[(root+i)%12]}).join(" – ")+(f>0?". Pestana na casa "+f+".":".");
+  [].forEach.call(document.querySelectorAll("[data-r]"),function(b){b.setAttribute("aria-pressed",String(+b.dataset.r===root))});
+  [].forEach.call(document.querySelectorAll("[data-t]"),function(b){b.setAttribute("aria-pressed",String(b.dataset.t===type))});drawScale()}
+var SCL={pm:["Pentatônica menor",[0,3,5,7,10]],pM:["Pentatônica maior",[0,2,4,7,9]],M:["Escala maior",[0,2,4,5,7,9,11]],m:["Menor natural",[0,2,3,5,7,8,10]]},sc="pm";
+ document.getElementById("sc").innerHTML=Object.keys(SCL).map(function(k){return '<button class="chip" data-s="'+k+'" aria-pressed="false">'+SCL[k][0]+'</button>'}).join("");
+ [].forEach.call(document.querySelectorAll("[data-s]"),function(b){b.onclick=function(){sc=b.dataset.s;drawScale()}});
+ function drawScale(){var pc=SCL[sc][1].map(function(i){return(root+i)%12}),op=[4,9,2,7,11,4],s='<svg viewBox="0 0 450 160" style="width:100%" role="img" aria-label="Escala no braço">',f,r;
+  for(f=0;f<=12;f++)s+='<line x1="'+(30+f*33)+'" x2="'+(30+f*33)+'" y1="20" y2="120" stroke="var(--line)" stroke-width="'+(f===0?4:1.5)+'"/>';
+  for(r=0;r<6;r++){s+='<line x1="30" x2="426" y1="'+(20+r*20)+'" y2="'+(20+r*20)+'" stroke="var(--ink2)" stroke-width="1"/>';
+   for(f=0;f<=12;f++){var n=(op[5-r]+f)%12;if(pc.indexOf(n)<0)continue;var cx=f===0?14:30+f*33-16,cy=20+r*20;
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="8.5" fill="'+(n===root?'var(--aqua)':'var(--ok)')+'"/><text x="'+cx+'" y="'+(cy+3.5)+'" text-anchor="middle" font-size="9" fill="#111">'+NOTES[n]+'</text>'}}
+  [3,5,7,9,12].forEach(function(f){s+='<text x="'+(30+f*33-16)+'" y="142" text-anchor="middle" font-size="11" fill="var(--ink2)">'+f+'</text>'});
+  document.getElementById("sd").innerHTML=s+'</svg>';
+  document.getElementById("sh").textContent="Escala de "+NOTES[root]+": "+SCL[sc][0];
+  [].forEach.call(document.querySelectorAll("[data-s]"),function(b){b.setAttribute("aria-pressed",String(b.dataset.s===sc))})}
+  [].forEach.call(app.querySelectorAll("[data-r]"),function(b){b.onclick=function(){root=+b.dataset.r;draw()}});
+ [].forEach.call(app.querySelectorAll("[data-t]"),function(b){b.onclick=function(){type=b.dataset.t;draw()}});
+ var actx;cleanup=function(){if(actx)actx.close()};
+ document.getElementById("pl").onclick=function(){actx=actx||new (window.AudioContext||window.webkitAudioContext)();var base=[40,45,50,55,59,64],t=actx.currentTime+.05,k=0;
+  fr.forEach(function(v,i){if(v===null)return;ksNote(actx,actx.destination,440*Math.pow(2,(base[i]+v-69)/12),t+k*.045,2.2,{a:.2});k++})};
+ draw()}
+home();
+</script>
+</body>
+</html>
